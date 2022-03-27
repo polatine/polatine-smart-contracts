@@ -14,36 +14,55 @@ contract Polatine is ERC721URIStorage {
     mapping(address => uint256) private _mintsLeft;
     mapping(address => string) private _artistName;
     mapping(address => uint256) private _deliverability;
+    mapping(address => string) private _tokenUri;
+    mapping(address => uint256) private _price;
+
 
     constructor() ERC721("Polatine", "PLT") {}
 
-    function register(string memory name, uint256 mintsLeft, uint256 deliverability) public {
+    function register(string memory name, uint256 mintsLeft, uint256 deliverability, string memory tokenURI, uint256 price) public {
+        require(_artistName[_msgSender()] == "");
         _artistName[_msgSender()] = name;
         _mintsLeft[_msgSender()] = mintsLeft;
         _deliverability[_msgSender()] = deliverability;
+        _tokenUri[_msgSender()] = tokenURI;
+        _price[_msgSender()] = price;
     }
 
     function artistNameOf(address artistAddress) public view virtual returns (string memory) {
         return _artistName[artistAddress];
     }
-    function mintrLeftOf(address artistAddress) public view virtual returns (uint256) {
+    function mintsLeftOf(address artistAddress) public view virtual returns (uint256) {
         return _mintsLeft[artistAddress];
     }
     function deliverabilityOf(address artistAddress) public view virtual returns (uint256) {
         return _deliverability[artistAddress];
     }
 
-    function mintNFT(address recipient, string memory tokenURI)
+    function _mint(address to, uint256 tokenId) internal virtual {
+        require(to != address(0), "ERC721: mint to the zero address");
+        require(!_exists(tokenId), "ERC721: token already minted");
+
+        _beforeTokenTransfer(address(0), to, tokenId);
+
+        _balances[to] += 1;
+        _owners[tokenId] = to;
+
+        emit Transfer(address(0), to, tokenId);
+
+        _afterTokenTransfer(address(0), to, tokenId);
+    }
+
+    function mintNFT(address artistAddress, uint256 mintsLeft)
         public
         returns (uint256)
     {
-        
         require(_mintsLeft[_msgSender()]>0);
         _tokenIds.increment();
-
+        
         uint256 newItemId = _tokenIds.current();
-        _mint(recipient, newItemId);
-        _setTokenURI(newItemId, tokenURI);
+        _mint(_msgSender(), newItemId);
+        _setTokenURI(newItemId, _tokenUri[_msgSender()]);
         _mintsLeft[_msgSender()] -= 1;
 
         return newItemId;
