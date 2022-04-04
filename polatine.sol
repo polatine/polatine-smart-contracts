@@ -18,7 +18,7 @@ contract Polatine is ERC721 {
 
     constructor() ERC721("Polatine", "PLT") {}
 
-    function register(string memory name, uint256 mintsLeft, uint256 deliverability, string memory newTokenURI, uint256 price) public {
+    function register(string calldata name, uint256 mintsLeft, uint256 deliverability, string calldata newTokenURI, uint256 price) public {
         require(keccak256(bytes(_subcollectionName[_msgSender()])) == keccak256(bytes("")), "Polatine: address already registered to a subcollection.");
         _subcollectionName[_msgSender()] = name;
         _mintsLeft[_msgSender()] = mintsLeft;
