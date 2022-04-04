@@ -10,31 +10,22 @@ contract Polatine is ERC721 {
     Counters.Counter private _tokenIds;
 
     mapping(address => uint256) private _mintsLeft; //How many mintings a subcollection has left
-    mapping(address => string) private _subcollectionName; //Which subcollection a address represents
-    mapping(address => uint256) private _deliverability; //Level of deliverability a subcollection has 
     mapping(address => string) private _tokenUri; //The Uri for a whole subcollection
     mapping(address => uint256) private _price; //The amount the artist gets as payment in WEI
     mapping(uint256 => address) private _tokenSubcollection; //Mapping from token to which subcollection it belongs to
 
     constructor() ERC721("Polatine", "PLT") {}
 
-    function register(string calldata name, uint256 mintsLeft, uint256 deliverability, string calldata newTokenURI, uint256 price) public {
-        require(keccak256(bytes(_subcollectionName[_msgSender()])) == keccak256(bytes("")), "Polatine: address already registered to a subcollection.");
-        _subcollectionName[_msgSender()] = name;
+    function register(uint256 mintsLeft, string calldata newTokenURI, uint256 price) public {
+        require(_price[_msgSender()] == 0, "Polatine: address already registered to a subcollection.");
+        require(price > 0, "Polatine: price must be non-zero positive number.");
         _mintsLeft[_msgSender()] = mintsLeft;
-        _deliverability[_msgSender()] = deliverability;
         _tokenUri[_msgSender()] = newTokenURI;
         _price[_msgSender()] = price;
     }
 
-    function subcollectionNameOf(address subcollectionAddress) public view virtual returns (string memory) {
-        return _subcollectionName[subcollectionAddress];
-    }
     function mintsLeftOf(address subcollectionAddress) public view virtual returns (uint256) {
         return _mintsLeft[subcollectionAddress];
-    }
-    function deliverabilityOf(address subcollectionAddress) public view virtual returns (uint256) {
-        return _deliverability[subcollectionAddress];
     }
     function tokenSubcollection(uint256 tokenId) public view virtual returns (address) {
         return _tokenSubcollection[tokenId];
@@ -50,8 +41,8 @@ contract Polatine is ERC721 {
         public payable
         returns (uint256)
     {
-        require(keccak256(bytes(_subcollectionName[subcollectionAddress])) != keccak256(bytes("")), "Polatine: address does not represent a subcollection.");
-        require(_mintsLeft[subcollectionAddress]>0, "Polatine: subcollection has no more mints left.");
+        require(_price[subcollectionAddress] > 0, "Polatine: address does not represent a subcollection.");
+        require(_mintsLeft[subcollectionAddress] > 0, "Polatine: subcollection has no more mints left.");
         require(msg.value == _price[subcollectionAddress], "Polatine: deposit does not match subcollection price."); // msg.value is how much ether was sent
         
         payable(subcollectionAddress).transfer(msg.value);// send the ether to subcollection owner
@@ -62,6 +53,28 @@ contract Polatine is ERC721 {
 
         _mintsLeft[subcollectionAddress] -= 1;
         _tokenSubcollection[newItemId] = subcollectionAddress;
+
+        return newItemId;
+    }
+    
+    function claimNFT(address subcollectionAddress, uint count)
+        public payable
+        returns (uint256)
+    {
+        require(_price[subcollectionAddress] > 0, "Polatine: address does not represent a subcollection.");
+        require(_mintsLeft[subcollectionAddress] >0, "Polatine: subcollection has no more mints left.");
+        require(_mintsLeft[subcollectionAddress] >= count, "Polatine: claim higher than mints left.");
+        require(msg.value == _price[subcollectionAddress]*count, "Polatine: deposit does not match subcollection price."); // msg.value is how much ether was sent
+
+        payable(subcollectionAddress).transfer(msg.value);// send the ether to subcollection owner
+        uint256 newItemId;
+        for (uint i = 0; i < count; i++) {
+            _tokenIds.increment();
+            newItemId = _tokenIds.current();
+            _mint(_msgSender(), newItemId);
+            _tokenSubcollection[newItemId] = subcollectionAddress;
+        }
+        _mintsLeft[subcollectionAddress] -= count;
 
         return newItemId;
     }
