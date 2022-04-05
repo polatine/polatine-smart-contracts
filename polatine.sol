@@ -81,4 +81,11 @@ contract Polatine is ERC721 {
 
         return newItemId;
     }
+    
+    function consume(uint256 tokenId) 
+        public
+    {
+        require(ownerOf(tokenId) == _msgSender(), "consume caller is not owner");
+        _burn(tokenId);
+    }
 }
