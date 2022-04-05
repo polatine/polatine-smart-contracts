@@ -33,6 +33,9 @@ contract Polatine is ERC721 {
     function priceOf(address subcollectionAddress) public view virtual returns (uint256) {
         return _price[subcollectionAddress];
     }
+    function subcollectionURI(address subcollectionAddress) public view virtual returns (string memory) {
+        return _tokenUri[subcollectionAddress];
+    }
     function tokenURI(uint256 tokenId) public view virtual override returns (string memory) {
         return _tokenUri[_tokenSubcollection[tokenId]];
     }
